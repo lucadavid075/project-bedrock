@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: retail-app
+  labels:
+    Project: karatu-2025-capstone
+    app.kubernetes.io/managed-by: terraform
