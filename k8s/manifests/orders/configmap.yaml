@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: orders
+  namespace: retail-app
+  labels:
+    Project: karatu-2025-capstone
+data:
+  RETAIL_ORDERS_PERSISTENCE_PROVIDER: postgres
+  RETAIL_ORDERS_PERSISTENCE_ENDPOINT: "REPLACE_WITH_RDS_HOST:5432"
+  RETAIL_ORDERS_PERSISTENCE_DB_NAME: orders
+  RETAIL_ORDERS_MESSAGING_PROVIDER: rabbitmq
