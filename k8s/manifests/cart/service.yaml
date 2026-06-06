@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: carts
+  namespace: retail-app
+  labels:
+    app: carts
+    Project: karatu-2025-capstone
+spec:
+  selector:
+    app: carts
+  ports:
+    - port: 80
+      targetPort: 8080
+  type: ClusterIP

@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: carts
+  namespace: retail-app
+  labels:
+    Project: karatu-2025-capstone
+data:
+  RETAIL_CART_PERSISTENCE_PROVIDER: dynamodb
+  RETAIL_CART_PERSISTENCE_DYNAMODB_TABLE_NAME: "REPLACE_WITH_DYNAMODB_TABLE_NAME"
+  RETAIL_CART_PERSISTENCE_DYNAMODB_CREATE_TABLE: "false"
