@@ -1,0 +1,31 @@
+apiVersion: v2
+name: retail-store
+description: >
+  InnovateMart retail store — umbrella chart using the upstream
+  retail-store-sample-app sub-charts with managed AWS data layer overrides.
+  Sub-charts are bundled locally from the upstream source repo.
+type: application
+version: 1.0.0
+appVersion: "1.5.0"
+
+dependencies:
+  - name: retail-store-sample-catalog-chart
+    alias: catalog
+    version: "1.5.0"
+    repository: "file://charts/catalog"
+  - name: retail-store-sample-cart-chart
+    alias: cart
+    version: "1.5.0"
+    repository: "file://charts/cart"
+  - name: retail-store-sample-checkout-chart
+    alias: checkout
+    version: "1.5.0"
+    repository: "file://charts/checkout"
+  - name: retail-store-sample-orders-chart
+    alias: orders
+    version: "1.5.0"
+    repository: "file://charts/orders"
+  - name: retail-store-sample-ui-chart
+    alias: ui
+    version: "1.5.0"
+    repository: "file://charts/ui"

@@ -1,0 +1,91 @@
+catalog:
+  fullnameOverride: catalog
+  replicaCount: 1
+  serviceAccount:
+    create: true
+    annotations: {}
+  mysql:
+    create: false          
+  app:
+    persistence:
+      provider: mysql
+      endpoint: ""         
+      database: catalog
+      secret:
+        create: false      
+        name: catalog-db
+
+cart:
+  fullnameOverride: carts
+  replicaCount: 1
+  serviceAccount:
+    create: true
+    annotations: {}        
+  dynamodb:
+    create: false          
+  app:
+    persistence:
+      provider: dynamodb
+      dynamodb:
+        tableName: ""      
+        createTable: false
+
+checkout:
+  fullnameOverride: checkout
+  replicaCount: 1
+  serviceAccount:
+    create: true
+    annotations: {}
+  redis:
+    create: true           
+  app:
+    persistence:
+      provider: redis
+    endpoints:
+      orders: "http://orders:80"
+
+orders:
+  fullnameOverride: orders
+  replicaCount: 1
+  serviceAccount:
+    create: true
+    annotations: {}
+  postgresql:
+    create: false          
+  rabbitmq:
+    create: true           
+  app:
+    persistence:
+      provider: postgres
+      endpoint: ""         
+      database: orders
+      secret:
+        create: false      
+        name: orders-db
+    messaging:
+      provider: rabbitmq
+
+ui:
+  fullnameOverride: ui
+  replicaCount: 1
+  serviceAccount:
+    create: true
+    annotations: {}
+  service:
+    type: ClusterIP
+    port: 80
+  app:
+    endpoints:
+      catalog:  "http://catalog:80"
+      carts:    "http://carts:80"
+      checkout: "http://checkout:80"
+      orders:   "http://orders:80"
+  ingress:
+    enabled: true
+    className: alb
+    annotations:
+      kubernetes.io/ingress.class: alb
+      alb.ingress.kubernetes.io/scheme: internet-facing
+      alb.ingress.kubernetes.io/target-type: ip
+      alb.ingress.kubernetes.io/load-balancer-attributes: "idle_timeout.timeout_seconds=60"
+    hosts: []              

@@ -1,0 +1,27 @@
+catalog:
+  app:
+    persistence:
+      endpoint: "project-bedrock-cluster-catalog.xxxx.us-east-1.rds.amazonaws.com:3306"
+      database: catalog
+      secret:
+        create: false
+        name: catalog-db
+
+cart:
+  serviceAccount:
+    annotations:
+      eks.amazonaws.com/role-arn: "arn:aws:iam::123456789:role/project-bedrock-cluster-carts"
+  app:
+    persistence:
+      dynamodb:
+        tableName: "project-bedrock-cluster-carts"
+        createTable: false
+
+orders:
+  app:
+    persistence:
+      endpoint: "project-bedrock-cluster-orders.xxxx.us-east-1.rds.amazonaws.com:5432"
+      database: orders
+      secret:
+        create: false
+        name: orders-db
