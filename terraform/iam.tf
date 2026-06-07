@@ -103,14 +103,20 @@ resource "aws_iam_policy" "github_actions_cicd_1" {
           "ec2:CreateTags", "ec2:DeleteTags",
           "ec2:RunInstances", "ec2:TerminateInstances",
           "ec2:CreateLaunchTemplate", "ec2:DeleteLaunchTemplate",
-          "ec2:CreateLaunchTemplateVersion", "ec2:ModifyLaunchTemplate"
+          "ec2:CreateLaunchTemplateVersion", "ec2:ModifyLaunchTemplate",
+          "ec2:CreateNetworkAcl", "ec2:DeleteNetworkAcl",
+          "ec2:CreateNetworkAclEntry", "ec2:DeleteNetworkAclEntry",
+          "ec2:ReplaceNetworkAclAssociation", "ec2:ReplaceNetworkAclEntry",
+          "ec2:ModifyVpcEndpoint", "ec2:CreateVpcEndpoint", "ec2:DeleteVpcEndpoints",
+          "ec2:AssociateVpcCidrBlock", "ec2:DisassociateVpcCidrBlock",
+          "ec2:ModifySubnetAttribute"
         ]
         Resource = "*"
       },
       {
-        Sid      = "AutoScaling"
-        Effect   = "Allow"
-        Action   = ["autoscaling:*"]
+        Sid    = "AutoScaling"
+        Effect = "Allow"
+        Action = ["autoscaling:*"]
         Resource = "*"
       },
       {
@@ -132,7 +138,9 @@ resource "aws_iam_policy" "github_actions_cicd_1" {
           "dynamodb:CreateTable", "dynamodb:DeleteTable",
           "dynamodb:DescribeTable", "dynamodb:UpdateTable",
           "dynamodb:ListTables", "dynamodb:TagResource",
-          "dynamodb:UntagResource", "dynamodb:ListTagsOfResource"
+          "dynamodb:UntagResource", "dynamodb:ListTagsOfResource",
+          "dynamodb:DescribeContinuousBackups",
+          "dynamodb:DescribeTimeToLive"
         ]
         Resource = "*"
       },
@@ -148,7 +156,14 @@ resource "aws_iam_policy" "github_actions_cicd_1" {
           "s3:GetBucketPolicy", "s3:PutBucketPolicy", "s3:DeleteBucketPolicy",
           "s3:GetBucketTagging", "s3:PutBucketTagging",
           "s3:GetObject", "s3:PutObject", "s3:DeleteObject",
-          "s3:ListBucketVersions"
+          "s3:ListBucketVersions", "s3:GetBucketAcl", "s3:PutBucketAcl",
+          "s3:GetBucketObjectLockConfiguration",
+          "s3:GetBucketRequestPayment",
+          "s3:GetBucketWebsite",
+          "s3:GetBucketCORS",
+          "s3:GetAccelerateConfiguration",
+          "s3:GetLifecycleConfiguration",
+          "s3:GetReplicationConfiguration"
         ]
         Resource = "*"
       },
@@ -159,7 +174,10 @@ resource "aws_iam_policy" "github_actions_cicd_1" {
           "lambda:CreateFunction", "lambda:DeleteFunction", "lambda:GetFunction",
           "lambda:UpdateFunctionCode", "lambda:UpdateFunctionConfiguration",
           "lambda:AddPermission", "lambda:RemovePermission", "lambda:GetPolicy",
-          "lambda:ListFunctions", "lambda:TagResource", "lambda:InvokeFunction"
+          "lambda:ListFunctions", "lambda:TagResource", "lambda:InvokeFunction",
+          "lambda:ListVersionsByFunction", "lambda:GetFunctionCodeSigningConfig",
+          "lambda:PutFunctionEventInvokeConfig", "lambda:GetFunctionEventInvokeConfig",
+          "lambda:ListAliases"
         ]
         Resource = "*"
       }
@@ -210,7 +228,9 @@ resource "aws_iam_policy" "github_actions_cicd_2" {
           "secretsmanager:CreateSecret", "secretsmanager:DeleteSecret",
           "secretsmanager:GetSecretValue", "secretsmanager:PutSecretValue",
           "secretsmanager:DescribeSecret", "secretsmanager:ListSecrets",
-          "secretsmanager:TagResource", "secretsmanager:UpdateSecret"
+          "secretsmanager:TagResource", "secretsmanager:UpdateSecret",
+          "secretsmanager:GetResourcePolicy", "secretsmanager:PutResourcePolicy",
+          "secretsmanager:DeleteResourcePolicy"
         ]
         Resource = "*"
       },
@@ -220,7 +240,9 @@ resource "aws_iam_policy" "github_actions_cicd_2" {
         Action = [
           "logs:CreateLogGroup", "logs:DeleteLogGroup", "logs:DescribeLogGroups",
           "logs:CreateLogStream", "logs:PutLogEvents", "logs:GetLogEvents",
-          "logs:PutRetentionPolicy", "logs:TagResource",
+          "logs:PutRetentionPolicy", "logs:TagResource", "logs:UntagResource",
+          "logs:ListTagsForResource", "logs:ListTagsLogGroup",
+          "logs:DescribeLogStreams", "logs:DeleteLogStream",
           "cloudwatch:PutMetricData", "cloudwatch:GetMetricStatistics",
           "cloudwatch:ListMetrics", "cloudwatch:DescribeAlarms"
         ]
