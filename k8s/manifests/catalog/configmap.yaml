@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: catalog
+  namespace: retail-app
+  labels:
+    Project: karatu-2025-capstone
+data:
+  RETAIL_CATALOG_PERSISTENCE_PROVIDER: mysql
+  RETAIL_CATALOG_PERSISTENCE_ENDPOINT: "REPLACE_WITH_RDS_ENDPOINT"
+  RETAIL_CATALOG_PERSISTENCE_DB_NAME: catalog
