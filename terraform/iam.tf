@@ -114,9 +114,9 @@ resource "aws_iam_policy" "github_actions_cicd_1" {
         Resource = "*"
       },
       {
-        Sid      = "AutoScaling"
-        Effect   = "Allow"
-        Action   = ["autoscaling:*"]
+        Sid    = "AutoScaling"
+        Effect = "Allow"
+        Action = ["autoscaling:*"]
         Resource = "*"
       },
       {
@@ -163,7 +163,9 @@ resource "aws_iam_policy" "github_actions_cicd_1" {
           "s3:GetBucketCORS",
           "s3:GetAccelerateConfiguration",
           "s3:GetLifecycleConfiguration",
-          "s3:GetReplicationConfiguration"
+          "s3:GetReplicationConfiguration",
+          "s3:GetBucketLogging",
+          "s3:PutBucketLogging"
         ]
         Resource = "*"
       },
@@ -261,7 +263,12 @@ resource "aws_iam_policy" "github_actions_cicd_2" {
           "kms:CreateKey", "kms:DescribeKey", "kms:ListKeys",
           "kms:ListAliases", "kms:CreateAlias", "kms:DeleteAlias",
           "kms:GenerateDataKey", "kms:Decrypt", "kms:Encrypt",
-          "kms:TagResource"
+          "kms:TagResource", "kms:UntagResource",
+          "kms:GetKeyPolicy", "kms:PutKeyPolicy",
+          "kms:GetKeyRotationStatus", "kms:EnableKeyRotation",
+          "kms:ScheduleKeyDeletion", "kms:CancelKeyDeletion",
+          "kms:ListResourceTags", "kms:ListGrants",
+          "kms:CreateGrant", "kms:RevokeGrant"
         ]
         Resource = "*"
       }
