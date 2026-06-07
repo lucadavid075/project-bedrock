@@ -1,0 +1,232 @@
+name: Terraform
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "terraform/**"
+      - ".github/workflows/terraform.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "terraform/**"
+      - ".github/workflows/terraform.yml"
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action to run'
+        required: true
+        default: 'plan'
+        type: choice
+        options:
+          - plan
+          - apply
+          - destroy
+
+permissions:
+  id-token: write        
+  contents: read         
+  pull-requests: write   
+
+env:
+  TF_VERSION: "1.10.5"
+  AWS_REGION: "us-east-1"
+  WORKING_DIR: "./terraform"
+
+jobs:
+  terraform:
+    name: >-
+      Terraform
+      ${{ github.event_name == 'pull_request' && 'Plan' ||
+          github.event_name == 'workflow_dispatch' && inputs.action ||
+          'Apply' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIR }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: GitHubActions-${{ github.run_id }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Init
+        id: init
+        run: terraform init -input=false
+
+      - name: Terraform Format Check
+        id: fmt
+        run: terraform fmt -check -recursive
+        continue-on-error: true
+
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        id: plan
+        if: |
+          github.event_name == 'pull_request' ||
+          (github.event_name == 'workflow_dispatch' && inputs.action == 'plan')
+        timeout-minutes: 15
+        run: |
+          terraform plan -input=false -no-color -out=tfplan 2>&1 | tee plan_output.txt
+          echo "exitcode=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+        continue-on-error: true
+
+      - name: Post Plan as PR Comment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const plan = fs.readFileSync('${{ env.WORKING_DIR }}/plan_output.txt', 'utf8');
+            const truncated = plan.length > 60000
+              ? plan.substring(0, 60000) + '\n\n... (truncated — see Actions log for full output)'
+              : plan;
+
+            const body = `## Terraform Plan — \`${{ github.event.pull_request.head.sha }}\`
+
+            <details><summary>Show Plan</summary>
+
+            \`\`\`hcl
+            ${truncated}
+            \`\`\`
+
+            </details>
+
+            | Step | Status |
+            |------|--------|
+            | Init | ${{ steps.init.outcome == 'success' && '✅' || '❌' }} |
+            | Format | ${{ steps.fmt.outcome == 'success' && '✅' || '⚠️ warnings' }} |
+            | Validate | ${{ steps.validate.outcome == 'success' && '✅' || '❌' }} |
+            | Plan | ${{ steps.plan.outputs.exitcode == '0' && '✅ No changes' || steps.plan.outputs.exitcode == '2' && '⚠️ Changes pending' || '❌ Error' }} |
+
+            *Triggered by @${{ github.actor }} on \`${{ github.head_ref }}\`*`;
+
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            for (const c of comments.data) {
+              if (c.user.type === 'Bot' && c.body.includes('Terraform Plan')) {
+                await github.rest.issues.deleteComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: c.id,
+                });
+              }
+            }
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body,
+            });
+
+      - name: Fail if Plan errored
+        if: github.event_name == 'pull_request' && steps.plan.outputs.exitcode == '1'
+        run: exit 1
+
+      - name: Terraform Apply
+        if: |
+          (github.ref == 'refs/heads/main' && github.event_name == 'push') ||
+          (github.event_name == 'workflow_dispatch' && inputs.action == 'apply')
+        timeout-minutes: 40
+        run: terraform apply -auto-approve -input=false
+
+      - name: Generate Helm values from Terraform output
+        if: |
+          (github.ref == 'refs/heads/main' && github.event_name == 'push') ||
+          (github.event_name == 'workflow_dispatch' && inputs.action == 'apply')
+        run: |
+          terraform output -raw helm_values_rds \
+            > ../helm/retail-store/values-rds.yaml
+          echo "values-rds.yaml generated"
+
+      - name: Install Helm
+        if: |
+          (github.ref == 'refs/heads/main' && github.event_name == 'push') ||
+          (github.event_name == 'workflow_dispatch' && inputs.action == 'apply') ||
+          (github.event_name == 'workflow_dispatch' && inputs.action == 'destroy')
+        uses: azure/setup-helm@v4
+        with:
+          version: "3.16.0"
+
+      - name: Update kubeconfig
+        if: |
+          (github.ref == 'refs/heads/main' && github.event_name == 'push') ||
+          (github.event_name == 'workflow_dispatch' && inputs.action == 'apply') ||
+          (github.event_name == 'workflow_dispatch' && inputs.action == 'destroy')
+        run: |
+          aws eks update-kubeconfig \
+            --region ${{ env.AWS_REGION }} \
+            --name project-bedrock-cluster
+
+      - name: Deploy retail store via Helm
+        if: |
+          (github.ref == 'refs/heads/main' && github.event_name == 'push') ||
+          (github.event_name == 'workflow_dispatch' && inputs.action == 'apply')
+        timeout-minutes: 15
+        working-directory: .
+        run: |
+          helm upgrade --install retail-store ./helm/retail-store \
+            --namespace retail-app \
+            --create-namespace \
+            --wait \
+            --timeout 10m \
+            -f helm/retail-store/values-rds.yaml
+
+      - name: Verify pods are running
+        if: |
+          (github.ref == 'refs/heads/main' && github.event_name == 'push') ||
+          (github.event_name == 'workflow_dispatch' && inputs.action == 'apply')
+        run: |
+          kubectl get pods -n retail-app
+          kubectl get ingress -n retail-app
+
+      - name: Helm cleanup before destroy
+        if: github.event_name == 'workflow_dispatch' && inputs.action == 'destroy'
+        timeout-minutes: 10
+        run: |
+          helm uninstall retail-store -n retail-app || true
+          helm uninstall aws-load-balancer-controller -n kube-system || true
+          echo "Waiting 90s for LBC to delete the ALB..."
+          sleep 90
+
+      - name: Verify ALB deleted before destroy
+        if: github.event_name == 'workflow_dispatch' && inputs.action == 'destroy'
+        timeout-minutes: 5
+        run: |
+          for i in {1..10}; do
+            COUNT=$(aws elbv2 describe-load-balancers \
+              --region ${{ env.AWS_REGION }} \
+              --query 'length(LoadBalancers)' \
+              --output text)
+            echo "Attempt $i: $COUNT load balancer(s) remaining"
+            if [ "$COUNT" = "0" ]; then
+              echo "ALB fully deleted"
+              break
+            fi
+            sleep 15
+          done
+
+      - name: Terraform Destroy
+        if: github.event_name == 'workflow_dispatch' && inputs.action == 'destroy'
+        timeout-minutes: 40
+        run: terraform destroy -auto-approve -input=false
