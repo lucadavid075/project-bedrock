@@ -154,7 +154,7 @@ resource "aws_iam_policy" "github_actions_cicd_1" {
           "s3:GetEncryptionConfiguration", "s3:PutEncryptionConfiguration",
           "s3:GetBucketNotification", "s3:PutBucketNotification",
           "s3:GetBucketPolicy", "s3:PutBucketPolicy", "s3:DeleteBucketPolicy",
-          "s3:GetBucketTagging", "s3:PutBucketTagging",
+          "s3:GetBucketTagging", "s3:PutBucketTagging", "s3:GetBucketLogging",
           "s3:GetObject", "s3:PutObject", "s3:DeleteObject",
           "s3:ListBucketVersions", "s3:GetBucketAcl", "s3:PutBucketAcl",
           "s3:GetBucketObjectLockConfiguration",
