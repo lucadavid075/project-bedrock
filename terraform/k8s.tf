@@ -58,6 +58,27 @@ resource "aws_eks_access_policy_association" "bedrock_dev_view" {
   depends_on = [aws_eks_access_entry.bedrock_dev]
 }
 
+resource "aws_eks_access_entry" "github_actions" {
+  cluster_name  = var.cluster_name
+  principal_arn = aws_iam_role.github_actions.arn
+  type          = "STANDARD"
+  tags          = local.tags
+
+  depends_on = [module.eks]
+}
+
+resource "aws_eks_access_policy_association" "github_actions_admin" {
+  cluster_name  = var.cluster_name
+  principal_arn = aws_iam_role.github_actions.arn
+  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+
+  access_scope {
+    type = "cluster"
+  }
+
+  depends_on = [aws_eks_access_entry.github_actions]
+}
+
 resource "kubernetes_secret_v1" "catalog_db" {
   metadata {
     name      = "catalog-db"

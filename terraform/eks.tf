@@ -46,9 +46,9 @@ module "eks" {
       ami_type       = "AL2023_x86_64_STANDARD"
       instance_types = ["t3.small"]
 
-      min_size     = 3
+      min_size     = 2
       max_size     = 4
-      desired_size = 2
+      desired_size = 3
 
       subnet_ids = module.vpc.private_subnets
 
@@ -63,7 +63,6 @@ module "eks" {
   tags = local.tags
 }
 
-# ── IRSA for EBS CSI driver ──────────────────────────────────────────────────
 module "ebs_csi_irsa" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
   version = "~> 5.0"
@@ -81,7 +80,6 @@ module "ebs_csi_irsa" {
   tags = local.tags
 }
 
-# ── IRSA for CloudWatch Observability add-on ──────────────────────────────────
 module "cloudwatch_observability_irsa" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
   version = "~> 5.0"
