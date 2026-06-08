@@ -183,7 +183,7 @@ jobs:
           (github.ref == 'refs/heads/main' && github.event_name == 'push') ||
           (github.event_name == 'workflow_dispatch' && inputs.action == 'apply')
         timeout-minutes: 15
-        working-directory: .
+        working-directory: ${{ github.workspace }}
         run: |
           helm upgrade --install retail-store ./helm/retail-store \
             --namespace retail-app \

@@ -114,9 +114,9 @@ resource "aws_iam_policy" "github_actions_cicd_1" {
         Resource = "*"
       },
       {
-        Sid    = "AutoScaling"
-        Effect = "Allow"
-        Action = ["autoscaling:*"]
+        Sid      = "AutoScaling"
+        Effect   = "Allow"
+        Action   = ["autoscaling:*"]
         Resource = "*"
       },
       {
