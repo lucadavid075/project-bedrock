@@ -11,6 +11,11 @@ module "eks" {
   cluster_endpoint_public_access  = true
   cluster_endpoint_private_access = true
 
+  kms_key_administrators = [
+    var.cluster_admin_principal_arn,
+    aws_iam_role.github_actions.arn,
+  ]
+
   cluster_enabled_log_types = [
     "api",
     "audit",
@@ -58,7 +63,7 @@ module "eks" {
     }
   }
 
-  enable_cluster_creator_admin_permissions = true
+  enable_cluster_creator_admin_permissions = false
 
   tags = local.tags
 }
