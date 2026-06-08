@@ -40,6 +40,12 @@ variable "github_repo" {
   default     = "lucadavid075/project-bedrock"
 }
 
+variable "cluster_admin_principal_arn" {
+  description = "Stable IAM principal that should retain EKS cluster admin access"
+  type        = string
+  default     = "arn:aws:iam::757559216958:user/bedrock-admin"
+}
+
 variable "app_namespace" {
   description = "Kubernetes namespace for the retail application"
   type        = string
