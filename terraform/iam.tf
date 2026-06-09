@@ -257,6 +257,19 @@ resource "aws_iam_policy" "github_actions_cicd_2" {
         Resource = "*"
       },
       {
+        Sid    = "ACM"
+        Effect = "Allow"
+        Action = [
+          "acm:AddTagsToCertificate",
+          "acm:DescribeCertificate",
+          "acm:GetCertificate",
+          "acm:ImportCertificate",
+          "acm:ListCertificates",
+          "acm:ListTagsForCertificate"
+        ]
+        Resource = "*"
+      },
+      {
         Sid    = "KMS"
         Effect = "Allow"
         Action = [
