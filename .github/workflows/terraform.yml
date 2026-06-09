@@ -190,7 +190,13 @@ jobs:
             -target=aws_s3_bucket.assets \
             -target=aws_lambda_function.asset_processor \
             -target=aws_secretsmanager_secret.catalog_db \
-            -target=aws_secretsmanager_secret.orders_db
+            -target=aws_secretsmanager_secret.orders_db \
+            -target=aws_eks_access_entry.github_actions \
+            -target=aws_eks_access_policy_association.github_actions_admin \
+            -target=aws_eks_access_entry.cluster_admin \
+            -target=aws_eks_access_policy_association.cluster_admin \
+            -target=aws_eks_access_entry.bedrock_dev \
+            -target=aws_eks_access_policy_association.bedrock_dev_view
 
       - name: Terraform Apply - Kubernetes Resources
         if: |
