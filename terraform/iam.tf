@@ -204,6 +204,7 @@ resource "aws_iam_policy" "github_actions_cicd_2" {
           "iam:CreateRole", "iam:DeleteRole", "iam:GetRole",
           "iam:UpdateAssumeRolePolicy", "iam:PassRole",
           "iam:AttachRolePolicy", "iam:DetachRolePolicy",
+		  "iam:CreatePolicyVersion", "iam:DeletePolicyVersion",
           "iam:CreatePolicy", "iam:DeletePolicy", "iam:GetPolicy",
           "iam:GetPolicyVersion", "iam:ListPolicyVersions",
           "iam:ListAttachedRolePolicies", "iam:ListRolePolicies",
