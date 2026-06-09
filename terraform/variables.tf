@@ -57,3 +57,15 @@ variable "db_instance_class" {
   type        = string
   default     = "db.t3.micro"
 }
+
+variable "retail_store_host" {
+  description = "Optional DNS hostname for the retail store Ingress, used for the HTTPS bonus path"
+  type        = string
+  default     = ""
+}
+
+variable "alb_certificate_arn" {
+  description = "Optional ACM certificate ARN for HTTPS termination on the ALB"
+  type        = string
+  default     = ""
+}

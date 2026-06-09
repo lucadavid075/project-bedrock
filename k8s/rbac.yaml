@@ -10,5 +10,5 @@ roleRef:
   name: view
 subjects:
   - kind: User
-    name: bedrock-dev-view
+    name: arn:aws:iam::757559216958:user/bedrock-dev-view
     apiGroup: rbac.authorization.k8s.io

@@ -58,6 +58,29 @@ resource "aws_eks_access_policy_association" "bedrock_dev_view" {
   depends_on = [aws_eks_access_entry.bedrock_dev]
 }
 
+resource "kubernetes_cluster_role_binding_v1" "bedrock_dev_view" {
+  metadata {
+    name = "bedrock-dev-view-binding"
+    labels = {
+      Project = "karatu-2025-capstone"
+    }
+  }
+
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "ClusterRole"
+    name      = "view"
+  }
+
+  subject {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "User"
+    name      = aws_iam_user.bedrock_dev.arn
+  }
+
+  depends_on = [aws_eks_access_policy_association.bedrock_dev_view]
+}
+
 resource "aws_eks_access_entry" "cluster_admin" {
   cluster_name  = var.cluster_name
   principal_arn = var.cluster_admin_principal_arn
@@ -158,6 +181,45 @@ resource "helm_release" "retail_store" {
   set {
     name  = "orders.app.persistence.endpoint"
     value = "${aws_db_instance.orders.address}:${aws_db_instance.orders.port}"
+  }
+
+  dynamic "set" {
+    for_each = var.retail_store_host == "" ? [] : [var.retail_store_host]
+
+    content {
+      name  = "ui.ingress.hosts[0]"
+      value = set.value
+    }
+  }
+
+  dynamic "set" {
+    for_each = var.alb_certificate_arn == "" ? [] : [var.alb_certificate_arn]
+
+    content {
+      name  = "ui.ingress.annotations.alb\\.ingress\\.kubernetes\\.io/certificate-arn"
+      value = set.value
+      type  = "string"
+    }
+  }
+
+  dynamic "set" {
+    for_each = var.alb_certificate_arn == "" ? [] : [1]
+
+    content {
+      name  = "ui.ingress.annotations.alb\\.ingress\\.kubernetes\\.io/listen-ports"
+      value = "[{\"HTTP\":80},{\"HTTPS\":443}]"
+      type  = "string"
+    }
+  }
+
+  dynamic "set" {
+    for_each = var.alb_certificate_arn == "" ? [] : [1]
+
+    content {
+      name  = "ui.ingress.annotations.alb\\.ingress\\.kubernetes\\.io/ssl-redirect"
+      value = "443"
+      type  = "string"
+    }
   }
 
   depends_on = [

@@ -5,11 +5,19 @@ on:
     branches: [main]
     paths:
       - "terraform/**"
+      - "helm/**"
+      - "k8s/**"
+      - "lambda/**"
+      - "scripts/**"
       - ".github/workflows/terraform.yml"
   pull_request:
     branches: [main]
     paths:
       - "terraform/**"
+      - "helm/**"
+      - "k8s/**"
+      - "lambda/**"
+      - "scripts/**"
       - ".github/workflows/terraform.yml"
   workflow_dispatch:
     inputs:
@@ -22,6 +30,11 @@ on:
           - plan
           - apply
           - destroy
+      enable_nipio_tls:
+        description: 'After apply, import a self-signed nip.io certificate into ACM and enable ALB HTTPS'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   id-token: write        
@@ -32,6 +45,10 @@ env:
   TF_VERSION: "1.10.5"
   AWS_REGION: "us-east-1"
   WORKING_DIR: "./terraform"
+  APP_NAMESPACE: "retail-app"
+  INGRESS_NAME: "ui"
+  TF_VAR_retail_store_host: ${{ vars.RETAIL_STORE_HOST }}
+  TF_VAR_alb_certificate_arn: ${{ secrets.ALB_CERTIFICATE_ARN }}
 
 jobs:
   terraform:
@@ -192,6 +209,42 @@ jobs:
             --timeout 10m \
             -f helm/retail-store/values-rds.yaml
 
+      - name: Enable nip.io TLS fallback
+        if: github.event_name == 'workflow_dispatch' && inputs.action == 'apply' && inputs.enable_nipio_tls
+        timeout-minutes: 15
+        working-directory: ${{ github.workspace }}
+        run: bash scripts/enable-nipio-tls.sh
+
+      - name: Apply nip.io TLS annotations
+        if: github.event_name == 'workflow_dispatch' && inputs.action == 'apply' && inputs.enable_nipio_tls
+        timeout-minutes: 20
+        run: terraform apply -auto-approve -input=false
+
+      - name: Refresh Helm values after TLS setup
+        if: github.event_name == 'workflow_dispatch' && inputs.action == 'apply' && inputs.enable_nipio_tls
+        run: |
+          terraform output -raw helm_values_rds \
+            > ../helm/retail-store/values-rds.yaml
+          echo "values-rds.yaml refreshed with TLS ingress settings"
+
+      - name: Verify nip.io HTTPS endpoint
+        if: github.event_name == 'workflow_dispatch' && inputs.action == 'apply' && inputs.enable_nipio_tls
+        timeout-minutes: 8
+        working-directory: ${{ github.workspace }}
+        run: |
+          echo "Testing https://${NIPIO_TLS_HOST}"
+          for i in {1..24}; do
+            STATUS=$(curl -k -sS -o /dev/null -w "%{http_code}" "https://${NIPIO_TLS_HOST}" || true)
+            echo "Attempt $i: HTTP $STATUS"
+            if [ "$STATUS" != "000" ] && [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 500 ]; then
+              echo "nip.io HTTPS endpoint is responding: https://${NIPIO_TLS_HOST}"
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "nip.io HTTPS endpoint did not become ready"
+          exit 1
+
       - name: Verify pods are running
         if: |
           (github.ref == 'refs/heads/main' && github.event_name == 'push') ||
@@ -199,6 +252,9 @@ jobs:
         run: |
           kubectl get pods -n retail-app
           kubectl get ingress -n retail-app
+          if [ -n "${NIPIO_TLS_HOST:-}" ]; then
+            echo "nip.io HTTPS URL: https://${NIPIO_TLS_HOST}"
+          fi
 
       - name: Helm cleanup before destroy
         if: github.event_name == 'workflow_dispatch' && inputs.action == 'destroy'
