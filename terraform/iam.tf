@@ -170,6 +170,22 @@ resource "aws_iam_policy" "github_actions_cicd_1" {
         Resource = "*"
       },
       {
+        Sid    = "TerraformState"
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject",
+          "s3:ListBucket",
+          "s3:GetBucketVersioning",
+          "s3:GetBucketLocation"
+        ]
+        Resource = [
+          "arn:aws:s3:::project-bedrock-tfstate-alt-soe-025-4887",
+          "arn:aws:s3:::project-bedrock-tfstate-alt-soe-025-4887/*"
+      ] },
+
+      {
         Sid    = "Lambda"
         Effect = "Allow"
         Action = [
@@ -204,7 +220,7 @@ resource "aws_iam_policy" "github_actions_cicd_2" {
           "iam:CreateRole", "iam:DeleteRole", "iam:GetRole",
           "iam:UpdateAssumeRolePolicy", "iam:PassRole",
           "iam:AttachRolePolicy", "iam:DetachRolePolicy",
-		  "iam:CreatePolicyVersion", "iam:DeletePolicyVersion",
+          "iam:CreatePolicyVersion", "iam:DeletePolicyVersion",
           "iam:CreatePolicy", "iam:DeletePolicy", "iam:GetPolicy",
           "iam:GetPolicyVersion", "iam:ListPolicyVersions",
           "iam:ListAttachedRolePolicies", "iam:ListRolePolicies",
