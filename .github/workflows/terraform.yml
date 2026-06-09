@@ -160,11 +160,43 @@ jobs:
         if: github.event_name == 'pull_request' && steps.plan.outputs.exitcode == '1'
         run: exit 1
 
-      - name: Terraform Apply
+      - name: Terraform Apply - Infrastructure
         if: |
           (github.ref == 'refs/heads/main' && github.event_name == 'push') ||
           (github.event_name == 'workflow_dispatch' && inputs.action == 'apply')
         timeout-minutes: 40
+        run: |
+          terraform apply -auto-approve -input=false \
+            -target=module.vpc \
+            -target=module.eks \
+            -target=module.ebs_csi_irsa \
+            -target=module.cloudwatch_observability_irsa \
+            -target=module.carts_irsa \
+            -target=module.lbc_irsa \
+            -target=aws_iam_role.github_actions \
+            -target=aws_iam_policy.github_actions_cicd_1 \
+            -target=aws_iam_policy.github_actions_cicd_2 \
+            -target=aws_iam_role_policy_attachment.github_actions_cicd_1 \
+            -target=aws_iam_role_policy_attachment.github_actions_cicd_2 \
+            -target=aws_iam_user.bedrock_dev \
+            -target=aws_iam_access_key.bedrock_dev \
+            -target=aws_iam_user_login_profile.bedrock_dev \
+            -target=aws_iam_user_policy_attachment.bedrock_dev_readonly \
+            -target=aws_iam_policy.bedrock_dev_s3 \
+            -target=aws_iam_user_policy_attachment.bedrock_dev_s3 \
+            -target=aws_db_instance.catalog \
+            -target=aws_db_instance.orders \
+            -target=aws_dynamodb_table.carts \
+            -target=aws_s3_bucket.assets \
+            -target=aws_lambda_function.asset_processor \
+            -target=aws_secretsmanager_secret.catalog_db \
+            -target=aws_secretsmanager_secret.orders_db
+        
+        - name: Terraform Apply - Kubernetes Resources
+        if: |
+          (github.ref == 'refs/heads/main' && github.event_name == 'push') ||
+          (github.event_name == 'workflow_dispatch' && inputs.action == 'apply')
+        timeout-minutes: 20
         run: terraform apply -auto-approve -input=false
 
       - name: Generate Helm values from Terraform output
