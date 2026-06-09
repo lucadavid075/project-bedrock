@@ -96,5 +96,11 @@ output "helm_values_rds" {
         }
       }
     }
+    ui = {
+      ingress = {
+        annotations = local.ui_ingress_annotations
+        hosts       = local.ui_ingress_hosts
+      }
+    }
   })
 }
