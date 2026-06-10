@@ -320,7 +320,25 @@ jobs:
             sleep 15
           done
 
-      - name: Terraform Destroy
+      - name: Terraform Destroy - Kubernetes resources first
+        if: github.event_name == 'workflow_dispatch' && inputs.action == 'destroy'
+        timeout-minutes: 15
+        run: |
+          terraform destroy -auto-approve -input=false \
+            -target=helm_release.retail_store \
+            -target=helm_release.aws_lbc \
+            -target=kubernetes_namespace_v1.retail_app \
+            -target=kubernetes_secret_v1.catalog_db \
+            -target=kubernetes_secret_v1.orders_db \
+            -target=kubernetes_cluster_role_binding_v1.bedrock_dev_view \
+            -target=aws_eks_access_entry.bedrock_dev \
+            -target=aws_eks_access_policy_association.bedrock_dev_view \
+            -target=aws_eks_access_entry.github_actions \
+            -target=aws_eks_access_policy_association.github_actions_admin \
+            -target=aws_eks_access_entry.cluster_admin \
+            -target=aws_eks_access_policy_association.cluster_admin
+        
+      - name: Terraform Destroy - Everything else
         if: github.event_name == 'workflow_dispatch' && inputs.action == 'destroy'
         timeout-minutes: 40
         run: terraform destroy -auto-approve -input=false

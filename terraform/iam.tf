@@ -203,6 +203,10 @@ resource "aws_iam_policy" "github_actions_cicd_1" {
   })
 
   tags = local.tags
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 # Policy 2 of 2 — IAM, observability and supporting services
@@ -306,6 +310,10 @@ resource "aws_iam_policy" "github_actions_cicd_2" {
   })
 
   tags = local.tags
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_iam_role_policy_attachment" "github_actions_cicd_1" {
