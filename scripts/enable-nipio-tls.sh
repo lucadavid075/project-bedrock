@@ -13,7 +13,6 @@ for attempt in {1..60}; do
   if [[ -n "$alb_host" ]]; then
     break
   fi
-
   echo "Attempt ${attempt}: ALB hostname not ready yet"
   sleep 10
 done
@@ -25,24 +24,34 @@ fi
 
 echo "ALB hostname: ${alb_host}"
 
-alb_ip="$(
-  python3 - "$alb_host" <<'PY'
-import socket
-import sys
+# Install dig if not present
+if ! command -v dig &>/dev/null; then
+  apt-get install -y -q dnsutils 2>/dev/null || true
+fi
 
-hostname = sys.argv[1]
-for info in socket.getaddrinfo(hostname, None, socket.AF_INET, socket.SOCK_STREAM):
-    print(info[4][0])
-    sys.exit(0)
+# Resolve ALB to IPv4 using dig with retries
+# GitHub Actions runners sometimes need a moment for DNS propagation
+alb_ip=""
+for attempt in {1..10}; do
+  alb_ip="$(dig +short A "$alb_host" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || true)"
+  if [[ -n "$alb_ip" ]]; then
+    break
+  fi
+  echo "DNS resolution attempt ${attempt}: waiting for ALB DNS..."
+  sleep 15
+done
 
-sys.exit("no IPv4 address found")
-PY
-)"
+# Fallback to getent if dig fails
+if [[ -z "$alb_ip" ]]; then
+  alb_ip="$(getent hosts "$alb_host" | awk '{print $1}' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || true)"
+fi
 
 if [[ -z "$alb_ip" ]]; then
   echo "Could not resolve an IPv4 address for ${alb_host}" >&2
   exit 1
 fi
+
+echo "Resolved ALB IP: ${alb_ip}"
 
 nipio_host="retail-store-${alb_ip//./-}.nip.io"
 echo "Using nip.io host: ${nipio_host}"
