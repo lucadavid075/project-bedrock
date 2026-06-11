@@ -134,8 +134,6 @@ resource "kubernetes_secret_v1" "catalog_db" {
     labels    = { "app.kubernetes.io/managed-by" = "terraform" }
   }
 
-  # Keys match exactly what the catalog chart's deployment.yaml reads
-  # via secretRef: RETAIL_CATALOG_PERSISTENCE_USER and _PASSWORD
   data = {
     RETAIL_CATALOG_PERSISTENCE_USER     = aws_db_instance.catalog.username
     RETAIL_CATALOG_PERSISTENCE_PASSWORD = random_password.catalog_db.result
@@ -151,8 +149,6 @@ resource "kubernetes_secret_v1" "orders_db" {
     labels    = { "app.kubernetes.io/managed-by" = "terraform" }
   }
 
-  # Keys match exactly what the orders chart's deployment.yaml reads
-  # via secretRef: RETAIL_ORDERS_PERSISTENCE_USERNAME and _PASSWORD
   data = {
     RETAIL_ORDERS_PERSISTENCE_USERNAME = aws_db_instance.orders.username
     RETAIL_ORDERS_PERSISTENCE_PASSWORD = random_password.orders_db.result
@@ -161,15 +157,58 @@ resource "kubernetes_secret_v1" "orders_db" {
   type = "Opaque"
 }
 
+locals {
+  # Base ingress annotations always present
+  base_ingress_annotations = {
+    "kubernetes.io/ingress.class"                        = "alb"
+    "alb.ingress.kubernetes.io/scheme"                   = "internet-facing"
+    "alb.ingress.kubernetes.io/target-type"              = "ip"
+    "alb.ingress.kubernetes.io/load-balancer-attributes" = "idle_timeout.timeout_seconds=60"
+  }
+
+  # TLS annotations added only when a certificate ARN is provided
+  tls_ingress_annotations = var.alb_certificate_arn != "" ? {
+    "alb.ingress.kubernetes.io/certificate-arn" = var.alb_certificate_arn
+    "alb.ingress.kubernetes.io/listen-ports"    = "[{\"HTTP\":80},{\"HTTPS\":443}]"
+    "alb.ingress.kubernetes.io/ssl-redirect"    = "443"
+  } : {}
+
+  # Merged annotations passed to the Helm chart
+  ui_ingress_annotations = merge(local.base_ingress_annotations, local.tls_ingress_annotations)
+
+  # Hosts list - empty for plain HTTP, set to domain when TLS is enabled
+  ui_ingress_hosts = var.retail_store_host != "" ? [var.retail_store_host] : []
+}
+
 resource "helm_release" "retail_store" {
   name      = "retail-store"
   chart     = "${path.module}/../helm/retail-store"
   namespace = kubernetes_namespace_v1.retail_app.metadata[0].name
 
-  values = [file("${path.module}/../helm/retail-store/values.yaml")]
+  atomic          = true
+  wait            = true
+  timeout         = 600
+  cleanup_on_fail = true
 
-  # Layer 2: inject live infrastructure values
-  # Endpoints, table names, IRSA ARN — not secrets, safe as set blocks
+  # Layer 1: base chart defaults
+  # Layer 2: TLS ingress values merged in via yamlencode - avoids
+  #          Terraform set block limitations with JSON annotation values
+  #          such as alb.ingress.kubernetes.io/listen-ports
+  values = [
+    file("${path.module}/../helm/retail-store/values.yaml"),
+    yamlencode({
+      ui = {
+        ingress = {
+          enabled     = true
+          className   = "alb"
+          annotations = local.ui_ingress_annotations
+          hosts       = local.ui_ingress_hosts
+        }
+      }
+    })
+  ]
+
+  # Layer 3: live infrastructure values injected at apply time
   set {
     name  = "catalog.app.persistence.endpoint"
     value = aws_db_instance.catalog.endpoint
@@ -185,45 +224,6 @@ resource "helm_release" "retail_store" {
   set {
     name  = "orders.app.persistence.endpoint"
     value = "${aws_db_instance.orders.address}:${aws_db_instance.orders.port}"
-  }
-
-  dynamic "set" {
-    for_each = var.retail_store_host == "" ? [] : [var.retail_store_host]
-
-    content {
-      name  = "ui.ingress.hosts[0]"
-      value = set.value
-    }
-  }
-
-  dynamic "set" {
-    for_each = var.alb_certificate_arn == "" ? [] : [var.alb_certificate_arn]
-
-    content {
-      name  = "ui.ingress.annotations.alb\\.ingress\\.kubernetes\\.io/certificate-arn"
-      value = set.value
-      type  = "string"
-    }
-  }
-
-  dynamic "set" {
-    for_each = var.alb_certificate_arn == "" ? [] : [1]
-
-    content {
-      name  = "ui.ingress.annotations.alb\\.ingress\\.kubernetes\\.io/listen-ports"
-      value = "[{\"HTTP\":80},{\"HTTPS\":443}]"
-      type  = "string"
-    }
-  }
-
-  dynamic "set" {
-    for_each = var.alb_certificate_arn == "" ? [] : [1]
-
-    content {
-      name  = "ui.ingress.annotations.alb\\.ingress\\.kubernetes\\.io/ssl-redirect"
-      value = "443"
-      type  = "string"
-    }
   }
 
   depends_on = [
