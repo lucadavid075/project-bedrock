@@ -35,10 +35,10 @@ resource "helm_release" "aws_lbc" {
     name  = "vpcId"
     value = module.vpc.vpc_id
   }
-  
-  wait             = true
-  wait_for_jobs    = true
-  timeout          = 300
+
+  wait          = true
+  wait_for_jobs = true
+  timeout       = 300
 
   depends_on = [module.eks]
 }
