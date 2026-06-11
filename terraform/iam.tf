@@ -239,6 +239,7 @@ resource "aws_iam_policy" "github_actions_cicd_2" {
           "iam:GetOpenIDConnectProvider", "iam:ListOpenIDConnectProviders",
           "iam:CreateInstanceProfile", "iam:DeleteInstanceProfile",
           "iam:GetInstanceProfile", "iam:AddRoleToInstanceProfile",
+          "iam:TagOpenIDConnectProvider", "iam:UntagOpenIDConnectProvider",
           "iam:RemoveRoleFromInstanceProfile", "iam:ListInstanceProfilesForRole",
           "iam:ListRoles"
         ]
