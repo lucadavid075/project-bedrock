@@ -17,7 +17,7 @@
   "cluster_endpoint": {
     "sensitive": false,
     "type": "string",
-    "value": "https://1B5FADC548F4EA3608114E32FA2C7491.gr7.us-east-1.eks.amazonaws.com"
+    "value": "https://7BA05F63F7BAE6A9738EBFFDAF70A517.gr7.us-east-1.eks.amazonaws.com"
   },
   "cluster_name": {
     "sensitive": false,
@@ -34,11 +34,6 @@
     "type": "string",
     "value": "bedrock-asset-processor"
   },
-  "orders_rds_endpoint": {
-    "sensitive": false,
-    "type": "string",
-    "value": "project-bedrock-cluster-orders.c0b66s4mgrxf.us-east-1.rds.amazonaws.com:5432"
-  },
   "region": {
     "sensitive": false,
     "type": "string",
@@ -47,6 +42,6 @@
   "vpc_id": {
     "sensitive": false,
     "type": "string",
-    "value": "vpc-0072e9dd4fd3bee2b"
+    "value": "vpc-03f11584da5e508e5"
   }
 }
